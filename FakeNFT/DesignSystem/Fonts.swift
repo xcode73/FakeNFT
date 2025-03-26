@@ -9,6 +9,7 @@ extension UIFont {
     static var headline3 = UIFont.systemFont(ofSize: 22, weight: .bold)
     static var headline4 = UIFont.systemFont(ofSize: 20, weight: .bold)
     static var headline5 = UIFont.systemFont(ofSize: 17, weight: .semibold)
+    static var headline6 = UIFont.systemFont(ofSize: 32, weight: .bold)
 
     // Body Fonts
     static var bodyRegular = UIFont.systemFont(ofSize: 17, weight: .regular)

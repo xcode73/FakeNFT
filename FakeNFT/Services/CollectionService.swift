@@ -7,8 +7,9 @@
 
 import Foundation
 import Combine
+import Dependencies
 
-protocol CollectionService {
+protocol CollectionService: AnyObject {
     func fetchCollections(
         page: Int,
         sortBy: CollectionSortOptions,
@@ -17,20 +18,13 @@ protocol CollectionService {
 }
 
 final class CollectionServiceImpl: CollectionService {
-    private let networkClient: NetworkClient
-    private let cacheService: CacheService
-    private let networkMonitor: NetworkMonitor
+    @Dependency(\.networkClient) var networkClient
+    @Dependency(\.cacheService) var cacheService
+    @Dependency(\.networkMonitor) var networkMonitor
+
     private var cancellables = Set<AnyCancellable>()
 
-    init(
-        networkClient: NetworkClient,
-        cacheService: CacheService,
-        networkMonitor: NetworkMonitor
-    ) {
-        self.networkClient = networkClient
-        self.cacheService = cacheService
-        self.networkMonitor = networkMonitor
-
+    init() {
         self.networkMonitor.connectivityPublisher
             .sink { _ in }
             .store(in: &cancellables)

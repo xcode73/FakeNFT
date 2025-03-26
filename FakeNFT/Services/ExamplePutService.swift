@@ -1,4 +1,5 @@
 import Foundation
+import Dependencies
 
 typealias ExamplePutCompletion = (Result<ExamplePutResponse, Error>) -> Void
 
@@ -11,11 +12,7 @@ protocol ExamplePutService {
 }
 
 final class ExamplePutServiceImpl: ExamplePutService {
-    private let networkClient: NetworkClient
-
-    init(networkClient: NetworkClient) {
-        self.networkClient = networkClient
-    }
+    @Dependency(\.networkClient) var networkClient
 
     func sendExamplePutRequest(
         param1: String,

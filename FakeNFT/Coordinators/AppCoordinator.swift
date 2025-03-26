@@ -6,141 +6,103 @@
 //
 
 import UIKit
+import Dependencies
 
 protocol Coordinator: AnyObject {
     var childCoordinators: [Coordinator] { get set }
-    var navigationController: UINavigationController { get set }
+    var navigationController: UINavigationController { get }
 
     func start()
 }
 
-class AppCoordinator: Coordinator {
+final class AppCoordinator: Coordinator {
     var childCoordinators = [Coordinator]()
     var navigationController: UINavigationController
 
-    /// Здесь можно внедрять зависимости (например, сервисы) через конструктор
+    @Dependency(\.onboardingStateStorage) var onboardingStateStorage
+    @Dependency(\.userManager) var userManager
+
+    // MARK: - Init
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
     }
 
-    // Точка входа. Здесь выбираем нужный поток в зависимости от состояния пользователя.
     func start() {
-        if UserManager.shared.isLoggedIn {
-            showMainFlow()
-        } else if !UserManager.shared.hasCompletedOnboarding {
+        showSplashScreen()
+    }
+
+    func childDidFinish(_ child: Coordinator?) {
+        if let child = child {
+            childCoordinators.removeAll { $0 === child }
+        }
+    }
+
+    private func determineFlow() {
+        if !onboardingStateStorage.completed {
             showOnboardingFlow()
+        } else if userManager.isLoggedIn {
+            showMainFlow()
         } else {
             showRegistrationFlow()
         }
     }
 
-    func showOnboardingFlow() {
-        let onboardingCoordinator = OnboardingCoordinator(navigationController: navigationController)
-        onboardingCoordinator.parentCoordinator = self
-        childCoordinators.append(onboardingCoordinator)
-        onboardingCoordinator.start()
+    private func showSplashScreen() {
+        let splashVC = SplashScreenViewController()
+        navigationController.viewControllers = [splashVC]
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { // Имитация загрузки
+            self.determineFlow()
+        }
     }
 
-    func showRegistrationFlow() {
-        let registrationCoordinator = RegistrationCoordinator(navigationController: navigationController)
+    private func showOnboardingFlow() {
+        let onboardingPageVC = OnboardingPageViewController()
+        onboardingPageVC.onboardingDelegate = self
+
+        replaceRootViewController(with: onboardingPageVC)
+    }
+
+    private func showRegistrationFlow() {
+        let registrationNavController = UINavigationController()
+        let registrationCoordinator = RegistrationCoordinator(navigationController: registrationNavController)
         registrationCoordinator.parentCoordinator = self
         childCoordinators.append(registrationCoordinator)
         registrationCoordinator.start()
     }
 
     func showMainFlow() {
-        let mainCoordinator = MainCoordinator(navigationController: navigationController)
-        mainCoordinator.parentCoordinator = self
+        let mainCoordinator = MainCoordinator()
         childCoordinators.append(mainCoordinator)
         mainCoordinator.start()
+        replaceRootViewController(with: mainCoordinator.tabBarController)
     }
 
-    // Метод для удаления завершённого дочернего координатора
-    func childDidFinish(_ child: Coordinator?) {
-        if let child = child {
-            childCoordinators.removeAll { $0 === child }
+    private func replaceRootViewController(
+        with newRootViewController: UIViewController,
+        animated: Bool = true
+    ) {
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first
+        else {
+            return
+        }
+
+        window.rootViewController = newRootViewController
+        if animated {
+            UIView.transition(with: window,
+                              duration: 0.5,
+                              options: [.transitionCrossDissolve],
+                              animations: nil,
+                              completion: nil)
         }
     }
 }
 
-
-
-// MARK: - Пример ViewController для онбординга
-class OnboardingViewController: UIViewController {
-    weak var coordinator: OnboardingCoordinator?
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .white
-        setupUI()
-    }
-
-    func setupUI() {
-        // Пример кнопки для завершения онбординга
-        let finishButton = UIButton(type: .system)
-        finishButton.setTitle("Завершить онбординг", for: .normal)
-        finishButton.addTarget(self, action: #selector(finishTapped), for: .touchUpInside)
-        finishButton.frame = CGRect(x: 50, y: 200, width: 220, height: 50)
-        view.addSubview(finishButton)
-    }
-
-    @objc func finishTapped() {
-        coordinator?.didFinishOnboarding()
-    }
-}
-
-// MARK: - Пример менеджера состояния пользователя
-class UserManager {
-    static let shared = UserManager()
-
-    var isLoggedIn: Bool = false
-    var hasCompletedOnboarding: Bool = false
-
-    private init() {}
-}
-
-// MARK: - Дополнительные координаторы (пример для регистрации и основного потока)
-
-// Координатор регистрации
-class RegistrationCoordinator: Coordinator {
-    weak var parentCoordinator: AppCoordinator?
-    var childCoordinators = [Coordinator]()
-    var navigationController: UINavigationController
-
-    init(navigationController: UINavigationController) {
-        self.navigationController = navigationController
-    }
-
-    func start() {
-        let registrationVC = RegistrationViewController()
-        registrationVC.coordinator = self
-        navigationController.pushViewController(registrationVC, animated: true)
-    }
-
-    func didFinishRegistration() {
-        parentCoordinator?.childDidFinish(self)
-        parentCoordinator?.showMainFlow()
-    }
-}
-
-class RegistrationViewController: UIViewController {
-    weak var coordinator: RegistrationCoordinator?
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .lightGray
-        setupUI()
-    }
-
-    func setupUI() {
-        let finishButton = UIButton(type: .system)
-        finishButton.setTitle("Завершить регистрацию", for: .normal)
-        finishButton.addTarget(self, action: #selector(finishTapped), for: .touchUpInside)
-        finishButton.frame = CGRect(x: 50, y: 200, width: 220, height: 50)
-        view.addSubview(finishButton)
-    }
-
-    @objc func finishTapped() {
-        coordinator?.didFinishRegistration()
+extension AppCoordinator: OnboardingPageViewControllerDelegate {
+    func didFinishOnboarding() {
+        onboardingStateStorage.completed = true
+        determineFlow()
     }
 }

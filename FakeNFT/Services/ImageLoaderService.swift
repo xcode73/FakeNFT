@@ -42,7 +42,6 @@ final class ImageLoaderServiceImpl: ImageLoaderService {
 
     func clearCache() {
         ImageCache.default.clearMemoryCache()
-        ImageCache.default.clearDiskCache {
-        }
+        ImageCache.default.clearDiskCache {}
     }
 }

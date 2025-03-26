@@ -7,11 +7,11 @@
 
 import Foundation
 
-protocol OnboardingStateStorage {
+protocol OnboardingStateStorage: AnyObject {
     var completed: Bool { get set }
 }
 
-class OnboardingStateStorageImpl {
+class OnboardingStateStorageImpl: OnboardingStateStorage {
     @UserDefault(key: "isOnboardingCompleted", defaultValue: false)
     private var isOnboardingCompleted: Bool
 

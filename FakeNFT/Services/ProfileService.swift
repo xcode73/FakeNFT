@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Dependencies
 
 typealias ProfileCompletion = (Result<ProfileDTO, ProfileServiceError>) -> Void
 
@@ -20,24 +21,16 @@ enum ProfileServiceError: Error {
 }
 
 final class ProfileServiceImpl: ProfileService {
-    private let networkClient: NetworkClient
+    @Dependency(\.networkClient) var networkClient
+    @Dependency(\.cacheService) var cacheService
+    @Dependency(\.networkMonitor) var networkMonitor
+
     private var fetchProfileTask: NetworkTask?
     private var updateProfileTask: NetworkTask?
     private var updateFavouritesTask: NetworkTask?
-
-    private let cacheService: CacheService
-    private let networkMonitor: NetworkMonitor
     private var cancellables = Set<AnyCancellable>()
 
-    init(
-        networkClient: NetworkClient,
-        cacheService: CacheService,
-        networkMonitor: NetworkMonitor
-    ) {
-        self.networkClient = networkClient
-        self.cacheService = cacheService
-        self.networkMonitor = networkMonitor
-
+    init() {
         self.networkMonitor.connectivityPublisher
             .sink { _ in }
             .store(in: &cancellables)

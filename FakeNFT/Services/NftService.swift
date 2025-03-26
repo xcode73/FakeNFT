@@ -1,4 +1,5 @@
 import Foundation
+import Dependencies
 
 typealias NftCompletion = (Result<Nft, Error>) -> Void
 typealias NftsCompletion = (Result<[Nft], Error>) -> Void
@@ -9,14 +10,8 @@ protocol NftService {
 }
 
 final class NftServiceImpl: NftService {
-
-    private let networkClient: NetworkClient
-    private let storage: NftStorage
-
-    init(networkClient: NetworkClient, storage: NftStorage) {
-        self.storage = storage
-        self.networkClient = networkClient
-    }
+    @Dependency(\.networkClient) var networkClient
+    @Dependency(\.nftStorage) var storage
 
     func loadNft(id: NftID, completion: @escaping NftCompletion) {
         if let nft = storage.getNft(with: id) {

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Dependencies
 
 protocol UserService {
     func fetchUsers(page: Int, size: Int, completion: @escaping (Result<[User], Error>) -> Void)
@@ -16,12 +17,7 @@ protocol UserService {
 }
 
 final class UserServiceImpl: UserService {
-
-    private let networkClient: NetworkClient
-
-    init(networkClient: NetworkClient) {
-        self.networkClient = networkClient
-    }
+    @Dependency(\.networkClient) var networkClient
 
     func fetchUsers(
         page: Int,
