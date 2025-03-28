@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol StatisticsUserDefaultsStorageProtocol {
+protocol StatisticsUserDefaultsStorageProtocol: AnyObject {
     var currentPage: Int { get set }
     var previousPageSize: Int { get set }
     var selectedUsersSortOption: SortOption { get set }

@@ -3,11 +3,8 @@ import UIKit
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
-    lazy var servicesAssembly = ServicesAssembly(
-        networkClient: DefaultNetworkClient(),
-        nftStorage: NftStorageImpl(),
-        cacheService: CacheServiceImpl(),
-        networkMonitor: NetworkMonitorImpl()
+    private lazy var appCoordinator = AppCoordinator(
+        navigationController: UINavigationController()
     )
 
     func scene(
@@ -16,11 +13,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let scene = (scene as? UIWindowScene) else { return }
+
+        appCoordinator.start()
+
         window = UIWindow(windowScene: scene)
-
-        let tabBar = TabBarController(servicesAssembly: servicesAssembly)
-
-        window?.rootViewController = tabBar
+        window?.rootViewController = appCoordinator.navigationController
         window?.makeKeyAndVisible()
     }
 }

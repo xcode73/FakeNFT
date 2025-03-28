@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Dependencies
 
 typealias OrderCompletion = (Result<Order, Error>) -> Void
 typealias OrderPutCompletion = (Result<Order, Error>) -> Void
@@ -19,20 +20,13 @@ extension Notification.Name {
 }
 
 final class OrderServiceImpl: OrderService {
-    private let networkClient: NetworkClient
-    private let cacheService: CacheService
-    private let networkMonitor: NetworkMonitor
+    @Dependency(\.networkClient) var networkClient
+    @Dependency(\.cacheService) var cacheService
+    @Dependency(\.networkMonitor) var networkMonitor
+
     private var cancellables = Set<AnyCancellable>()
 
-    init(
-        networkClient: NetworkClient,
-        cacheService: CacheService,
-        networkMonitor: NetworkMonitor
-    ) {
-        self.networkClient = networkClient
-        self.cacheService = cacheService
-        self.networkMonitor = networkMonitor
-
+    init() {
         self.networkMonitor.connectivityPublisher
             .sink { _ in }
             .store(in: &cancellables)
